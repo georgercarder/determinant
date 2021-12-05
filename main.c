@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
+// -lpthread
 
 typedef struct {
   int dimension;
@@ -51,7 +53,7 @@ squareMatrix* cofactorMatrix(squareMatrix* m, int idx) {
   return ret;
 }
 
-int determinant(squareMatrix* m); // declare
+int determinant_(squareMatrix* m); // declare
 
 int smartCofactorMul(int a, squareMatrix* m, int idx) {
   if (a==0) { // so many zeros so we can speed up
@@ -63,7 +65,7 @@ int smartCofactorMul(int a, squareMatrix* m, int idx) {
     freeMatrix(c);
     return product; 
   }
-  int product = a * determinant(c);
+  int product = a * determinant_(c);
   freeMatrix(c);
   return product;
 }
@@ -77,10 +79,57 @@ int polarity(int idx, int dimension) {
   return -1;
 }
 
-int determinant(squareMatrix* m) {
+int sumRange(squareMatrix* m, int start, int bound) {
+  int ret = 0;
+  for (int i=start; i<bound; i++) { // only the top row
+    ret += polarity(i, m->dimension) * smartCofactorMul(m->entries[i], m, i); 
+  }
+  return ret;
+}
+
+typedef struct {
+  squareMatrix* m;
+  int idx;
+  int result;
+} threadPacket;
+
+threadPacket* newThreadPacket(squareMatrix* m, int idx) { 
+  threadPacket* ret = (threadPacket*)malloc(sizeof(threadPacket));
+  ret->m = m;
+  ret->idx = idx;
+  ret->result = 0; // initialize
+}
+
+int determinant_(squareMatrix* m) { // lower level 
   int ret=0;
   for (int i=0; i<m->dimension; i++) { // only the top row
     ret += polarity(i, m->dimension) * smartCofactorMul(m->entries[i], m, i); 
+  }
+  return ret;
+}
+
+void* computeSummand(void* ptr) {
+  threadPacket* tp = (threadPacket*)ptr;
+  int i = tp->idx;
+  squareMatrix* m = tp->m;
+  int ret = polarity(i, m->dimension) * smartCofactorMul(m->entries[i], m, i); 
+  tp->result = ret;
+}
+
+int determinant(squareMatrix* m) { // top level with concurrency
+  int ret=0;
+  pthread_t threads[m->dimension];
+  threadPacket* tps[m->dimension];
+  for (int i=0; i<m->dimension; ++i) { // only the top row
+    tps[i] = newThreadPacket(m, i);
+    pthread_t t;
+    threads[i] = t;
+    pthread_create(&threads[i], NULL, computeSummand, (void*)tps[i]);
+  }
+  for (int i = 0; i<m->dimension; ++i) {
+    pthread_join(threads[i], NULL); 
+    ret += tps[i]->result;
+    free(tps[i]);
   }
   return ret;
 }
