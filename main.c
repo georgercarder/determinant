@@ -120,7 +120,7 @@ int main() {
   // stress test 2
   printf("\ndebug stress test 2\n");
 
-  dimension = 12; // dim 12 and up and it uses a LOT of memory
+  dimension = 12; 
   d2 = dimension*dimension;
   m = newSquareMatrix(dimension);
   for (int i=0; i<d2; i++) {
