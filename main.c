@@ -90,6 +90,7 @@ threadPacket* newThreadPacket(squareMatrix* m, int idx) {
   ret->m = m;
   ret->idx = idx;
   ret->result = 0; // initialize
+  return ret;
 }
 
 int determinant_(squareMatrix* m) { // lower level 
