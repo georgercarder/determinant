@@ -79,14 +79,6 @@ int polarity(int idx, int dimension) {
   return -1;
 }
 
-int sumRange(squareMatrix* m, int start, int bound) {
-  int ret = 0;
-  for (int i=start; i<bound; i++) { // only the top row
-    ret += polarity(i, m->dimension) * smartCofactorMul(m->entries[i], m, i); 
-  }
-  return ret;
-}
-
 typedef struct {
   squareMatrix* m;
   int idx;
@@ -169,7 +161,7 @@ int main() {
   // stress test 2
   printf("\ndebug stress test 2\n");
 
-  dimension = 12; 
+  dimension = 10; 
   d2 = dimension*dimension;
   m = newSquareMatrix(dimension);
   for (int i=0; i<d2; i++) {
